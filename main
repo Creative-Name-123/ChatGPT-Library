@@ -3,6 +3,8 @@ from tkinter import *
 from tkinter import scrolledtext, messagebox
 from tkinter import ttk
 variable = 0
+w_width = 0
+w_height = 0
 
 # Opening the list of books
 books = open("books.txt", "r+").read()
@@ -24,16 +26,16 @@ ISBN_list = ISBNs.split("\n")
 def read_library_data():
     try:
         with open("books.txt", "r", encoding="utf-8") as f1, open("authors.txt", "r", encoding="utf-8") as f2, open(
-            "types.txt", "r", encoding="utf-8") as f3, open("ISBNs.txt", "r", encoding="utf-8") as f4:
+                  "types.txt", "r", encoding="utf-8") as f3, open("ISBNs.txt", "r", encoding="utf-8") as f4:
 
-            titles = [line.strip() for line in f1.readlines()]
-            authors = [line.strip() for line in f2.readlines()]
-            types = [line.strip() for line in f3.readlines()]
-            isbns = [line.strip() for line in f4.readlines()]
+            read_titles = [line.strip() for line in f1.readlines()]
+            read_authors = [line.strip() for line in f2.readlines()]
+            read_types = [line.strip() for line in f3.readlines()]
+            read_isbns = [line.strip() for line in f4.readlines()]
 
             # Ensure all lists are of equal length
-            min_length = min(len(titles), len(authors), len(types), len(isbns))
-            return list(zip(titles[:min_length], authors[:min_length], types[:min_length], isbns[:min_length]))
+            min_length = min(len(read_titles), len(read_authors), len(read_types), len(read_isbns))
+            return list(zip(read_titles[:min_length], read_authors[:min_length], read_types[:min_length], read_isbns[:min_length]))
 
     except FileNotFoundError as e:
         print(f"Error: {e}")
@@ -225,7 +227,7 @@ def save_new_entry():
                             books_file.write("\n" + newTitle.get())
                             authors_file.write("\n" + newAuthor.get())
                             types_file.write("\n" + newType.get())
-                            ISBNs_file.write("\n?")
+                            ISBNs_file.write("\n")
                     books_file.close()
                     authors_file.close()
                     types_file.close()
@@ -398,24 +400,11 @@ def search():
         list_area.pack(fill=BOTH, side=LEFT, expand=TRUE)
 
 
-def secret_command():
-    global variable
-    variable += 1
-    secret_window = Toplevel()
-    secret_window.title("Easter Egg")
-    secret_area = scrolledtext.ScrolledText(secret_window, wrap=tkinter.WORD, width=30, height=5, bg="orange")
-    if variable == 1:
-        secret_area.insert(END, "You've pressed the ? button one time!")
-    else:
-        secret_area.insert(END, "You've pressed the ? button " + str(variable) + " times!")
-    secret_area.pack(fill=BOTH, side=LEFT, expand=TRUE)
-
-
 def show_help():
     help_text = (
         "📚 How to Use the Library Database:\n\n"
         "➡️ See All Entries:\n"
-        "- Click 'See All Entries' to view the current list of stored books.\n\n"
+        "- Click 'See All Entries (old format)' or 'Update Entries' to view the current list of stored books.\n\n"
         "✏️ Edit Book Info:\n"
         "- Use the appropriate input boxes to change the title, author, type, or ISBN.\n"
         "- Enter the entry number in the first box and the new value in the second.\n\n"
@@ -423,13 +412,21 @@ def show_help():
         "- Fill out the title, author, type, and ISBN fields.\n"
         "- Click 'Save new entry' to add it.\n\n"
         "🗑 Delete an Entry:\n"
-        "- Type the entry number into the delete box and click 'Delete'.\n\n"
+        "- Type the entry number into the delete box and click 'Delete item at position:'.\n\n"
         "🔍 Search:\n"
         "- Select a category and type a search term, then click 'Search'.\n\n"
         "❓ Need more help?\n"
         "- Ask ChatGPT."
     )
     messagebox.showinfo("How to Use This Project", help_text)
+
+
+def on_resize(event):
+    global w_width
+    global w_height
+    width = root.winfo_width()
+    height = root.winfo_height()
+    btnDisplay.place(x=width - 350, y=height // 2 - 145)
 
 
 # Creating a tkinter window
@@ -455,11 +452,11 @@ table_scroll.config(command=tree.yview)
 tree['columns'] = ("ID", "Title", "Author", "Type", "ISBN")
 
 tree.column("#0", width=0, stretch=NO)
-tree.column("ID", anchor=CENTER, width=40)
-tree.column("Title", anchor=W, width=200)
-tree.column("Author", anchor=W, width=150)
-tree.column("Type", anchor=CENTER, width=80)
-tree.column("ISBN", anchor=W, width=130)
+tree.column("ID", anchor=CENTER, width=40, stretch=NO)
+tree.column("Title", anchor=W, width=200, stretch=NO)
+tree.column("Author", anchor=W, width=100, stretch=NO)
+tree.column("Type", anchor=CENTER, width=80, stretch=NO)
+tree.column("ISBN", anchor=W, width=130, stretch=NO)
 
 # Define headings
 tree.heading("#0", text="", anchor=W)
@@ -471,10 +468,10 @@ tree.heading("ISBN", text="ISBN", anchor=W)
 
 # Button to load/display the data
 btnDisplay = Button(root, text="Update Entries", command=display_books, cursor="hand2")
-btnDisplay.place(x=640, y=150)
+btnDisplay.place(x=len("The x originally will not matter because it will change when the window size changes (including"
+                       " when the screen loads)."), y=len("The y doesn't matter either."))
 
 display_books()
-
 
 # Creating the See Books button
 btnSeeBooks = Button(root, text="See all entries (old format)", command=print_stuff, cursor="hand2")
@@ -559,11 +556,9 @@ searchType.place(x=55, y=527)
 searchText = Entry(root, width=45, bg="light yellow")
 searchText.place(x=5, y=560)
 
-# Nothing here
-btnNothing = Button(root, text="?", command=secret_command, cursor="plus")
-btnNothing.place(x=1520, y=770)
-
 help_button = Button(root, text="❓", command=show_help, cursor="question_arrow")
-help_button.place(x=1020, y=570)
+help_button.place(x=160, y=5)
+
+root.bind("<Configure>", on_resize)
 
 root.mainloop()
