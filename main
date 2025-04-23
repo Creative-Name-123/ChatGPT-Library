@@ -1,227 +1,569 @@
-import tkinter as tk
-from tkinter import messagebox
-import sqlite3
+import tkinter
+from tkinter import *
+from tkinter import scrolledtext, messagebox
+from tkinter import ttk
+variable = 0
+
+# Opening the list of books
+books = open("books.txt", "r+").read()
+book_list = books.split("\n")
+
+# Opening the list of authors
+authors = open("authors.txt", "r+").read()
+author_list = authors.split("\n")
+
+# Opening the list of types
+types = open("types.txt", "r+").read()
+type_list = types.split("\n")
+
+# Opening the list of ISBNs
+ISBNs = open("ISBNs.txt", "r+").read()
+ISBN_list = ISBNs.split("\n")
 
 
-# ----------------------
-# DATABASE SETUP
-# ----------------------
-def connect():
-    conn = sqlite3.connect("library.db")
-    cur = conn.cursor()
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS book (
-        id INTEGER PRIMARY KEY,
-        title TEXT UNIQUE,
-        author TEXT,
-        year INTEGER,
-        isbn TEXT UNIQUE
-    )""")
-    conn.commit()
-    conn.close()
+def read_library_data():
+    try:
+        with open("books.txt", "r", encoding="utf-8") as f1, open("authors.txt", "r", encoding="utf-8") as f2, open(
+            "types.txt", "r", encoding="utf-8") as f3, open("ISBNs.txt", "r", encoding="utf-8") as f4:
+
+            titles = [line.strip() for line in f1.readlines()]
+            authors = [line.strip() for line in f2.readlines()]
+            types = [line.strip() for line in f3.readlines()]
+            isbns = [line.strip() for line in f4.readlines()]
+
+            # Ensure all lists are of equal length
+            min_length = min(len(titles), len(authors), len(types), len(isbns))
+            return list(zip(titles[:min_length], authors[:min_length], types[:min_length], isbns[:min_length]))
+
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        return []
 
 
-def insert(title, author, year, isbn):
-    conn = sqlite3.connect("library.db")
-    cur = conn.cursor()
+def display_books():
+    # Clear existing rows
+    for row in tree.get_children():
+        tree.delete(row)
 
-    # Check if the title or ISBN already exists
-    cur.execute("SELECT * FROM book WHERE title=? OR isbn=?", (title, isbn))
-    existing_book = cur.fetchone()
-
-    if existing_book:
-        messagebox.showwarning("Duplicate Entry", "A book with this title or ISBN already exists!")
-        conn.close()
-        return
-
-    cur.execute("INSERT INTO book VALUES (NULL, ?, ?, ?, ?)", (title, author, year, isbn))
-    conn.commit()
-    conn.close()
+    # Insert new rows
+    for idx, (title, author, book_type, isbn) in enumerate(read_library_data(), start=1):
+        tree.insert("", "end", values=(idx, title, author, book_type, isbn))
 
 
-def view():
-    conn = sqlite3.connect("library.db")
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM book")
-    rows = cur.fetchall()
-    conn.close()
-    return rows
+def print_stuff():
+    global books
+    global book_list
+    global authors
+    global author_list
+    global types
+    global type_list
+    global ISBNs
+    global ISBN_list
+    books = open("books.txt", "r+").read()
+    book_list = books.split("\n")
+    authors = open("authors.txt", "r+").read()
+    author_list = authors.split("\n")
+    types = open("types.txt", "r+").read()
+    type_list = types.split("\n")
+    ISBNs = open("ISBNs.txt", "r+").read()
+    ISBN_list = ISBNs.split("\n")
+    list_window = Toplevel()
+    list_window.title("Entries:")
+    list_area = scrolledtext.ScrolledText(list_window, wrap=tkinter.WORD, width=60, height=20)
+    for i in range(len(book_list)):
+        if type_list[i] == "Book":
+            list_area.insert(END, str(i) + ". " + book_list[i])
+            list_area.insert(END, "\n      By " + author_list[i] + " (" + type_list[i] + ")" + "(ISBN: " + ISBN_list[i] + ")")
+        elif type_list[i] == "Movie":
+            list_area.insert(END, str(i) + ". " + book_list[i])
+            list_area.insert(END, "\n      Directed by " + author_list[i] + " (" + type_list[i] + ")")
+        else:
+            list_area.insert(END, str(i) + ". " + book_list[i])
+            list_area.insert(END, "\n      By " + author_list[i] + " (" + type_list[i] + ")")
+        list_area.insert(END, "\n")
+    list_area.pack(fill=BOTH, side=LEFT, expand=TRUE)
+    open("books.txt", "r+").close()
+    open("authors.txt", "r+").close()
+    open("types.txt", "r+").close()
+    open("ISBNs.txt", "r+").close()
+    return "nothing"
 
 
-def search(title="", author="", year="", isbn=""):
-    conn = sqlite3.connect("library.db")
-    cur = conn.cursor()
-    cur.execute("""
-    SELECT * FROM book WHERE 
-    title LIKE ? AND 
-    author LIKE ? AND 
-    year LIKE ? AND 
-    isbn LIKE ?""",
-                (f'%{title}%', f'%{author}%', f'%{year}%', f'%{isbn}%'))
-    rows = cur.fetchall()
-    conn.close()
-    return rows
-
-
-def delete(id):
-    conn = sqlite3.connect("library.db")
-    cur = conn.cursor()
-    cur.execute("DELETE FROM book WHERE id=?", (id,))
-    conn.commit()
-    conn.close()
-
-
-def update(id, title, author, year, isbn):
-    conn = sqlite3.connect("library.db")
-    cur = conn.cursor()
-    cur.execute("""
-    UPDATE book SET 
-    title=?, author=?, year=?, isbn=? 
-    WHERE id=?""", (title, author, year, isbn, id))
-    conn.commit()
-    conn.close()
-
-
-# ----------------------
-# GUI SETUP
-# ----------------------
-def get_selected_row(event):
-    global selected_tuple
-    index = listbox.curselection()
-    if index:
-        index = index[0]
-        selected_tuple = listbox.get(index)
-        entry_title.delete(0, tk.END)
-        entry_title.insert(tk.END, selected_tuple[1])
-        entry_author.delete(0, tk.END)
-        entry_author.insert(tk.END, selected_tuple[2])
-        entry_year.delete(0, tk.END)
-        entry_year.insert(tk.END, selected_tuple[3])
-        entry_isbn.delete(0, tk.END)
-        entry_isbn.insert(tk.END, selected_tuple[4])
-
-
-def view_command():
-    listbox.delete(0, tk.END)
-    for row in view():
-        listbox.insert(tk.END, row)
-
-
-def search_command():
-    listbox.delete(0, tk.END)
-    for row in search(title_text.get(), author_text.get(), year_text.get(), isbn_text.get()):
-        listbox.insert(tk.END, row)
-
-
-def add_command():
-    if title_text.get() and author_text.get():
-        insert(title_text.get(), author_text.get(), year_text.get(), isbn_text.get())
-        view_command()
+def edit_book():
+    try:
+        num = int(bookNumberInputArea.get())
+    except ValueError:
+        messagebox.showerror("Error", "Entry number must be an integer")
     else:
-        messagebox.showwarning("Input error", "Title and Author are required!")
+        global books
+        global book_list
+        books = open("books.txt", "r").read()
+        book_list = books.split("\n")
+        lines = open("books.txt", "r").readlines()
+        if len(bookNumberInputArea.get()) > 0 and len(bookTitleInputArea.get()) > 0:
+            try:
+                int(bookNumberInputArea.get())
+            except():
+                print("no")
+            else:
+                if 0 <= int(bookNumberInputArea.get()) <= len(lines):
+                    if bookTitleInputArea.get() in book_list:  # If inputted value is a duplicate
+                        messagebox.showerror("Error", "Duplicate book name")
+                    else:
+                        lines[int(bookNumberInputArea.get())] = bookTitleInputArea.get() + "\n"
+        with open("books.txt", "w+") as file:
+            for line in lines:
+                file.write(line)
+            file.close()
+        return "nothing"
 
 
-def delete_command():
+def edit_author():
     try:
-        delete(selected_tuple[0])
-        view_command()
-    except:
-        messagebox.showwarning("Selection error", "Please select a book to delete.")
+        num = int(bookNumberAuthorInputArea.get())
+    except ValueError:
+        messagebox.showerror("Error", "Entry number must be an integer")
+    else:
+        global authors
+        global author_list
+        authors = open("authors.txt", "r").read()
+        author_list = authors.split("\n")
+        lines = open("authors.txt", "r").readlines()
+        if len(bookNumberAuthorInputArea.get()) > 0 and len(bookAuthorInputArea.get()) > 0:
+            if 0 <= int(bookNumberAuthorInputArea.get()) <= len(lines):
+                lines[int(bookNumberAuthorInputArea.get())] = bookAuthorInputArea.get() + "\n"
+            else:
+                messagebox.showerror("Error", "Invalid entry number")
+        else:
+            messagebox.showerror("Error", "One or more fields are empty")
+        with open("authors.txt", "w+") as file:
+            for line in lines:
+                file.write(line)
+            file.close()
+        return "nothing"
 
 
-def update_command():
+def edit_type():
     try:
-        update(selected_tuple[0], title_text.get(), author_text.get(), year_text.get(), isbn_text.get())
-        view_command()
-    except:
-        messagebox.showwarning("Selection error", "Please select a book to update.")
+        num = int(bookNumberTypeInputArea.get())
+    except ValueError:
+        messagebox.showerror("Error", "Entry number must be an integer")
+    else:
+        with open("types.txt", "r") as file:
+            lines = file.readlines()
+            file.close()
+        if len(bookNumberTypeInputArea.get()) > 0 and len(bookTypeInputArea.get()) > 0:
+            if 0 <= int(bookNumberTypeInputArea.get()) <= len(lines):
+                lines[int(bookNumberTypeInputArea.get())] = bookTypeInputArea.get() + "\n"
+            else:
+                messagebox.showerror("Error", "Invalid entry number")
+        else:
+            messagebox.showerror("Error", "One or more fields are empty")
+        with open("types.txt", "w+") as file:
+            for line in lines:
+                file.write(line)
+            file.close()
+        return "nothing"
 
 
-# ----------------------
-# GUI DESIGN
-# ----------------------
-window = tk.Tk()
-window.title("Library Database")
-
-# Use a frame for better layout control
-frame = tk.Frame(window, bg='#f0f0f0', padx=20, pady=20)
-frame.pack(padx=10, pady=10)
-
-# Labels
-label_font = ('Arial', 12, 'bold')
-tk.Label(frame, text="Title", font=label_font, bg='#f0f0f0').grid(row=0, column=0, padx=5, pady=5)
-tk.Label(frame, text="Author", font=label_font, bg='#f0f0f0').grid(row=0, column=2, padx=5, pady=5)
-tk.Label(frame, text="Year", font=label_font, bg='#f0f0f0').grid(row=1, column=0, padx=5, pady=5)
-tk.Label(frame, text="ISBN", font=label_font, bg='#f0f0f0').grid(row=1, column=2, padx=5, pady=5)
-
-# Entry fields
-entry_font = ('Arial', 12)
-title_text = tk.StringVar()
-entry_title = tk.Entry(frame, textvariable=title_text, font=entry_font, width=30)
-entry_title.grid(row=0, column=1, padx=5, pady=5)
-
-author_text = tk.StringVar()
-entry_author = tk.Entry(frame, textvariable=author_text, font=entry_font, width=30)
-entry_author.grid(row=0, column=3, padx=5, pady=5)
-
-year_text = tk.StringVar()
-entry_year = tk.Entry(frame, textvariable=year_text, font=entry_font, width=30)
-entry_year.grid(row=1, column=1, padx=5, pady=5)
-
-isbn_text = tk.StringVar()
-entry_isbn = tk.Entry(frame, textvariable=isbn_text, font=entry_font, width=30)
-entry_isbn.grid(row=1, column=3, padx=5, pady=5)
-
-# Listbox and Scrollbar
-listbox_frame = tk.Frame(window)
-listbox_frame.pack(pady=10)
-
-listbox = tk.Listbox(listbox_frame, height=10, width=70, font=('Arial', 12), selectmode=tk.SINGLE)
-listbox.pack(side=tk.LEFT)
-
-scrollbar = tk.Scrollbar(listbox_frame, orient=tk.VERTICAL)
-scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-listbox.configure(yscrollcommand=scrollbar.set)
-scrollbar.configure(command=listbox.yview)
-listbox.bind('<<ListboxSelect>>', get_selected_row)
+def edit_isbn():
+    try:
+        num = int(bookNumberISBNInputArea.get())
+    except ValueError:
+        messagebox.showerror("Error", "Entry number must be an integer")
+    else:
+        global ISBNs
+        global ISBN_list
+        ISBNs = open("ISBNs.txt", "r").read()
+        ISBN_list = ISBNs.split("\n")
+        lines = open("ISBNs.txt", "r").readlines()
+        if len(bookNumberISBNInputArea.get()) > 0:
+            try:
+                int(bookNumberISBNInputArea.get())
+            except():
+                messagebox.showerror("Error", "ISBN number must be an integer")
+            else:
+                if int(bookNumberISBNInputArea.get()) <= len(lines):
+                    # ISBN-13 checker
+                    if int(bookISBNInputArea.get()[0]) == 9 and int(bookISBNInputArea.get()[1]) == 7 and (int(bookISBNInputArea.get()[2]) == 8 or int(bookISBNInputArea.get()[2]) == 9) and (int(bookISBNInputArea.get()[0]) + int(bookISBNInputArea.get()[1])*3 + int(bookISBNInputArea.get()[2]) + int(bookISBNInputArea.get()[3])*3 + int(bookISBNInputArea.get()[4]) + int(bookISBNInputArea.get()[5])*3 + int(bookISBNInputArea.get()[6]) + int(bookISBNInputArea.get()[7])*3 + int(bookISBNInputArea.get()[8]) + int(bookISBNInputArea.get()[9])*3 + int(bookISBNInputArea.get()[10]) + int(bookISBNInputArea.get()[11])*3 + int(bookISBNInputArea.get()[12])) % 10 == 0 and len(bookISBNInputArea.get()) == 13:
+                        if bookISBNInputArea.get() in ISBN_list:  # If inputted value is a duplicate
+                            messagebox.showerror("Error", "Duplicate ISBN number")
+                        else:
+                            lines[int(bookNumberISBNInputArea.get())] = bookISBNInputArea.get() + "\n"
+                    else:
+                        messagebox.showerror("Error", "Invalid ISBN number")
+        with open("ISBNs.txt", "w+") as file:
+            for line in lines:
+                file.write(line)
+            file.close()
+        return "nothing"
 
 
-# Buttons with improved style
-def hover(event, button):
-    button.config(bg='#80c9ff')
+def save_new_entry():
+    with open("books.txt", "a+") as books_file:
+        with open("authors.txt", "a+") as authors_file:
+            with open("types.txt", "a+") as types_file:
+                with open("ISBNs.txt", "a+") as ISBNs_file:
+                    if len(newTitle.get()) > 0 and len(newAuthor.get()) > 0 and len(newType.get()) > 0:
+                        if newTitle.get() in books_file.read():
+                            messagebox.showerror("Error", "Duplicate book name")
+                        elif newType.get() == "Book":
+                            if len(newISBN.get()) == 13:
+                                if int(newISBN.get()[0]) == 9 and int(newISBN.get()[1]) == 7 and (int(newISBN.get()[2]) == 8 or int(newISBN.get()[2]) == 9) and (int(newISBN.get()[0]) + int(newISBN.get()[1])*3 + int(newISBN.get()[2]) + int(newISBN.get()[3])*3 + int(newISBN.get()[4]) + int(newISBN.get()[5])*3 + int(newISBN.get()[6]) + int(newISBN.get()[7])*3 + int(newISBN.get()[8]) + int(newISBN.get()[9])*3 + int(newISBN.get()[10]) + int(newISBN.get()[11])*3 + int(newISBN.get()[12])) % 10 == 0:
+                                    if newISBN.get() in ISBNs_file.read():
+                                        messagebox.showerror("Error", "Duplicate ISBN number")
+                                    else:
+                                        books_file.write("\n" + newTitle.get())
+                                        authors_file.write("\n" + newAuthor.get())
+                                        types_file.write("\n" + newType.get())
+                                        ISBNs_file.write("\n" + newISBN.get())
+                                else:
+                                    messagebox.showerror("Error", "Invalid ISBN code")
+                            else:
+                                messagebox.showerror("Error", "Invalid ISBN code")
+                        else:
+                            books_file.write("\n" + newTitle.get())
+                            authors_file.write("\n" + newAuthor.get())
+                            types_file.write("\n" + newType.get())
+                            ISBNs_file.write("\n?")
+                    books_file.close()
+                    authors_file.close()
+                    types_file.close()
+                    ISBNs_file.close()
 
 
-def leave(event, button):
-    button.config(bg='#4a90e2')
+def delete_entry():
+    if len(deletePosition.get()) > 0:
+        if str(deletePosition.get()) == str(len(open("books.txt", "r").readlines())-1):
+            repeater = 2
+        else:
+            repeater = 1
+    else:
+        repeater = 0
+    for an_amazing_variable_name in range(repeater):
+        len_list = 0
+        rebuilding_book_list = []
+        rebuilding_author_list = []
+        rebuilding_type_list = []
+        rebuilding_isbn_list = []
+        with (open("books.txt", "r+") as books_file):
+            with open("authors.txt", "r+") as authors_file:
+                with open("types.txt", "r+") as types_file:
+                    with open("ISBNs.txt", "r+") as ISBNs_file:
+                        with open("books.txt", "r") as books_file_2:
+                            with open("authors.txt", "r") as authors_file_2:
+                                with open("types.txt", "r") as types_file_2:
+                                    if deletePosition.get().isdigit():
+                                        if 0 <= int(deletePosition.get()) <= len(books_file_2.readlines()):
+                                            for i in range(len(authors_file_2.read())):
+                                                if not i == int(deletePosition.get()):
+                                                    if not types_file_2.readline() == "":
+                                                        rebuilding_book_list.append(books_file.readline())
+                                                        rebuilding_author_list.append(authors_file.readline())
+                                                        rebuilding_type_list.append(types_file.readline())
+                                                        rebuilding_isbn_list.append(ISBNs_file.readline())
+                                                        len_list += 1
+                                                else:
+                                                    books_file.readline()
+                                                    authors_file.readline()
+                                                    types_file.readline()
+                                                    ISBNs_file.readline()
+                                            books_file.close()
+                                            authors_file.close()
+                                            types_file.close()
+                                            ISBNs_file.close()
+                                            books_file_2.close()
+                                            authors_file_2.close()
+                                            types_file_2.close()
+                                        else:
+                                            messagebox.showerror("Error", "Invalid entry position")
+                                            return "no thing"
+                                    else:
+                                        messagebox.showerror("Error", "Invalid entry position")
+                                        return "nothings"
+        with open("books.txt", "w+") as books_file_w:
+            with open("authors.txt", "w+") as authors_file_w:
+                with open("types.txt", "w+") as types_file_w:
+                    with open("ISBNs.txt", "w+") as ISBNs_file_w:
+                        for i in range(len_list):
+                            if not (i + 1 >= len_list and int(deletePosition.get()) == len_list):
+                                books_file_w.write(rebuilding_book_list[i])
+                                authors_file_w.write(rebuilding_author_list[i])
+                                types_file_w.write(rebuilding_type_list[i])
+                                ISBNs_file_w.write(rebuilding_isbn_list[i])
+                            else:
+                                books_file_w.write(rebuilding_book_list[i][:-1])
+                                authors_file_w.write(rebuilding_author_list[i][:-1])
+                                types_file_w.write(rebuilding_type_list[i][:-1])
+                                ISBNs_file_w.write(rebuilding_isbn_list[i][:-1])
+                        books_file_w.close()
+                        authors_file_w.close()
+                        types_file_w.close()
+                        ISBNs_file_w.close()
+    return "nothing"
 
 
-button_font = ('Arial', 12)
+def search():
+    global books
+    global book_list
+    global authors
+    global author_list
+    global types
+    global type_list
+    global ISBNs
+    global ISBN_list
+    books = open("books.txt", "r+").read()
+    book_list = books.split("\n")
+    authors = open("authors.txt", "r+").read()
+    author_list = authors.split("\n")
+    types = open("types.txt", "r+").read()
+    type_list = types.split("\n")
+    ISBNs = open("ISBNs.txt", "r+").read()
+    ISBN_list = ISBNs.split("\n")
+    list_window = Toplevel()
+    list_area = scrolledtext.ScrolledText(list_window, wrap=tkinter.WORD, width=60, height=20)
+    lower_books = open("books.txt", "r+").read().lower()
+    lower_book_list = lower_books.split("\n")
+    lower_authors = open("authors.txt", "r+").read().lower()
+    lower_author_list = lower_authors.split("\n")
+    lower_types = open("types.txt", "r+").read().lower()
+    lower_type_list = lower_types.split("\n")
+    lower_isbns = open("ISBNs.txt", "r+").read().lower()
+    lower_isbn_list = lower_isbns.split("\n")
+    if searchType.current() == 0:  # Name
+        list_window.title("Entries Containing \"" + searchText.get().lower() + "\" in their title")
+        for i in range(len(book_list)):
+            if searchText.get().lower() in lower_book_list[i]:
+                if type_list[i] == "Book":
+                    list_area.insert(END, str(i) + ". " + book_list[i])
+                    list_area.insert(END, "\n      By " + author_list[i] + " (" + type_list[i] + ")" + "(ISBN: " +ISBN_list[i] + ")")
+                elif type_list[i] == "Movie":
+                    list_area.insert(END, str(i) + ". " + book_list[i])
+                    list_area.insert(END, "\n      Directed by " + author_list[i] + " (" + type_list[i] + ")")
+                else:
+                    list_area.insert(END, str(i) + ". " + book_list[i])
+                    list_area.insert(END, "\n      By " + author_list[i] + " (" + type_list[i] + ")")
+                list_area.insert(END, "\n")
+        list_area.pack(fill=BOTH, side=LEFT, expand=TRUE)
+    elif searchType.current() == 1:  # Author/creator
+        list_window.title("Entries Containing \"" + searchText.get().lower() + "\" in author's name")
+        for i in range(len(book_list)):
+            if searchText.get().lower() in lower_author_list[i]:
+                if type_list[i] == "Book":
+                    list_area.insert(END, str(i) + ". " + book_list[i])
+                    list_area.insert(END,
+                                     "\n      By " + author_list[i] + " (" + type_list[i] + ")" + "(ISBN: " + ISBN_list[
+                                         i] + ")")
+                elif type_list[i] == "Movie":
+                    list_area.insert(END, str(i) + ". " + book_list[i])
+                    list_area.insert(END, "\n      Directed by " + author_list[i] + " (" + type_list[i] + ")")
+                else:
+                    list_area.insert(END, str(i) + ". " + book_list[i])
+                    list_area.insert(END, "\n      By " + author_list[i] + " (" + type_list[i] + ")")
+                list_area.insert(END, "\n")
+        list_area.pack(fill=BOTH, side=LEFT, expand=TRUE)
+    elif searchType.current() == 2:  # Type
+        list_window.title("Entries Containing \"" + searchText.get().lower() + "\" in their type")
+        for i in range(len(book_list)):
+            if searchText.get().lower() in lower_type_list[i]:
+                if type_list[i] == "Book":
+                    list_area.insert(END, str(i) + ". " + book_list[i])
+                    list_area.insert(END,
+                                     "\n      By " + author_list[i] + " (" + type_list[i] + ")" + "(ISBN: " + ISBN_list[
+                                         i] + ")")
+                elif type_list[i] == "Movie":
+                    list_area.insert(END, str(i) + ". " + book_list[i])
+                    list_area.insert(END, "\n      Directed by " + author_list[i] + " (" + type_list[i] + ")")
+                else:
+                    list_area.insert(END, str(i) + ". " + book_list[i])
+                    list_area.insert(END, "\n      By " + author_list[i] + " (" + type_list[i] + ")")
+                list_area.insert(END, "\n")
+        list_area.pack(fill=BOTH, side=LEFT, expand=TRUE)
+    elif searchType.current() == 3:  # ISBN
+        list_window.title("Entries Containing \"" + searchText.get().lower() + "\" in their ISBN")
+        for i in range(len(book_list)):
+            if searchText.get().lower() in lower_isbn_list[i]:
+                if type_list[i] == "Book":
+                    list_area.insert(END, str(i) + ". " + book_list[i])
+                    list_area.insert(END,
+                                     "\n      By " + author_list[i] + " (" + type_list[i] + ")" + "(ISBN: " + ISBN_list[
+                                         i] + ")")
+                elif type_list[i] == "Movie":
+                    list_area.insert(END, str(i) + ". " + book_list[i])
+                    list_area.insert(END, "\n      Directed by " + author_list[i] + " (" + type_list[i] + ")")
+                else:
+                    list_area.insert(END, str(i) + ". " + book_list[i])
+                    list_area.insert(END, "\n      By " + author_list[i] + " (" + type_list[i] + ")")
+                list_area.insert(END, "\n")
+        list_area.pack(fill=BOTH, side=LEFT, expand=TRUE)
 
 
-def create_button(window, text, command, row, column, columnspan=1):
-    button = tk.Button(window, text=text, font=button_font, bg='#4a90e2', fg='white', width=20, height=2,
-                       command=command)
-    button.grid(row=row, column=column, padx=10, pady=10, columnspan=columnspan)
-    button.bind("<Enter>", lambda event, button=button: hover(event, button))
-    button.bind("<Leave>", lambda event, button=button: leave(event, button))
-    return button
+def secret_command():
+    global variable
+    variable += 1
+    secret_window = Toplevel()
+    secret_window.title("Easter Egg")
+    secret_area = scrolledtext.ScrolledText(secret_window, wrap=tkinter.WORD, width=30, height=5, bg="orange")
+    if variable == 1:
+        secret_area.insert(END, "You've pressed the ? button one time!")
+    else:
+        secret_area.insert(END, "You've pressed the ? button " + str(variable) + " times!")
+    secret_area.pack(fill=BOTH, side=LEFT, expand=TRUE)
 
 
-# Organizing buttons in a grid (grouped into categories)
+def show_help():
+    help_text = (
+        "📚 How to Use the Library Database:\n\n"
+        "➡️ See All Entries:\n"
+        "- Click 'See All Entries' to view the current list of stored books.\n\n"
+        "✏️ Edit Book Info:\n"
+        "- Use the appropriate input boxes to change the title, author, type, or ISBN.\n"
+        "- Enter the entry number in the first box and the new value in the second.\n\n"
+        "➕ Add a New Entry:\n"
+        "- Fill out the title, author, type, and ISBN fields.\n"
+        "- Click 'Save new entry' to add it.\n\n"
+        "🗑 Delete an Entry:\n"
+        "- Type the entry number into the delete box and click 'Delete'.\n\n"
+        "🔍 Search:\n"
+        "- Select a category and type a search term, then click 'Search'.\n\n"
+        "❓ Need more help?\n"
+        "- Ask ChatGPT."
+    )
+    messagebox.showinfo("How to Use This Project", help_text)
 
-# Section 1: Data Viewing (View All, Search)
-create_button(frame, "View All Books", view_command, 2, 0, columnspan=2)
-create_button(frame, "Search Books", search_command, 3, 0, columnspan=2)
 
-# Section 2: Book Management (Add, Update, Delete)
-create_button(frame, "Add New Book", add_command, 2, 1, columnspan=2)
-create_button(frame, "Update Book", update_command, 3, 1, columnspan=2)
-create_button(frame, "Delete Book", delete_command, 4, 1, columnspan=2)
+# Creating a tkinter window
+root = Tk()
+root.geometry('1050x600')
+root.title("Library Database")
 
-# Section 3: Close
-create_button(frame, "Close", window.quit, 2, 2, columnspan=2)
+# Frame for the table
+table_frame = Frame(root)
+table_frame.pack(side=RIGHT, fill=NONE, expand=False, padx=10, pady=10)
 
-# Initialize database and run GUI
-connect()
-window.mainloop()
+# Scrollbar
+table_scroll = Scrollbar(table_frame)
+table_scroll.pack(side=RIGHT, fill=Y, expand=False)
+
+# Treeview widget
+tree = ttk.Treeview(table_frame, yscrollcommand=table_scroll.set, selectmode="browse")
+tree.pack(fill=BOTH, expand=False)
+
+table_scroll.config(command=tree.yview)
+
+# Define table columns
+tree['columns'] = ("ID", "Title", "Author", "Type", "ISBN")
+
+tree.column("#0", width=0, stretch=NO)
+tree.column("ID", anchor=CENTER, width=40)
+tree.column("Title", anchor=W, width=200)
+tree.column("Author", anchor=W, width=150)
+tree.column("Type", anchor=CENTER, width=80)
+tree.column("ISBN", anchor=W, width=130)
+
+# Define headings
+tree.heading("#0", text="", anchor=W)
+tree.heading("ID", text="ID", anchor=CENTER)
+tree.heading("Title", text="Title", anchor=W)
+tree.heading("Author", text="Author", anchor=W)
+tree.heading("Type", text="Type", anchor=CENTER)
+tree.heading("ISBN", text="ISBN", anchor=W)
+
+# Button to load/display the data
+btnDisplay = Button(root, text="Update Entries", command=display_books, cursor="hand2")
+btnDisplay.place(x=640, y=150)
+
+display_books()
+
+
+# Creating the See Books button
+btnSeeBooks = Button(root, text="See all entries (old format)", command=print_stuff, cursor="hand2")
+btnSeeBooks.place(x=5, y=5)
+
+# Creating the edit a book button
+btnEditABook = Button(root, text="Save title edits (box 1 is the entry number; box 2 is the new title)", command=edit_book, cursor="hand2")
+btnEditABook.place(x=5, y=35)
+
+# Creating input areas for editing books
+bookNumberInputArea = Entry(root, width=3, bg="light yellow")
+bookNumberInputArea.place(x=5, y=68)
+bookTitleInputArea = Entry(root, width=45, bg="light yellow")
+bookTitleInputArea.place(x=40, y=68)
+
+# Creating the edit authors button
+btnEditAnAuthor = Button(root, text="Save author edits (box 1 is the entry number; box 2 is the new author name)", command=edit_author, cursor="hand2")
+btnEditAnAuthor.place(x=5, y=95)
+
+# Creating input areas for editing authors
+bookNumberAuthorInputArea = Entry(root, width=3, bg="light yellow")
+bookNumberAuthorInputArea.place(x=5, y=128)
+bookAuthorInputArea = Entry(root, width=20, bg="light yellow")
+bookAuthorInputArea.place(x=40, y=128)
+
+# Creating the edit type button
+btnEditAType = Button(root, text="Save type edits (box 1 is the entry number; box 2 is the new type)", command=edit_type, cursor="hand2")
+btnEditAType.place(x=5, y=155)
+
+# Creating input areas for editing types
+bookNumberTypeInputArea = Entry(root, width=3, bg="light yellow")
+bookNumberTypeInputArea.place(x=5, y=188)
+bookTypeInputArea = Entry(root, width=7, bg="light yellow")
+bookTypeInputArea.place(x=40, y=188)
+
+# Creating the edit ISBN button
+btnEditAnISBN = Button(root, text="Save ISBN edits (box 1 is the entry number; box 2 is the new ISBN)", command=edit_isbn, cursor="hand2")
+btnEditAnISBN.place(x=5, y=215)
+
+# Creating input areas for editing ISBNs
+bookNumberISBNInputArea = Entry(root, width=3, bg="light yellow")
+bookNumberISBNInputArea.place(x=5, y=248)
+bookISBNInputArea = Entry(root, width=13, bg="light yellow")
+bookISBNInputArea.place(x=40, y=248)
+
+# Creating the save new entry button
+btnSaveNewEntry = Button(root, text="Save new entry", command=save_new_entry, cursor="hand2")
+btnSaveNewEntry.place(x=5, y=308)
+
+# Creating the input areas for the new entry button
+bookText = Label(root, text="Name:")
+bookText.place(x=5, y=341)
+newTitle = Entry(root, width=45, bg="light yellow")
+newTitle.place(x=48, y=341)
+
+authorText = Label(root, text="Author/director/creator:")
+authorText.place(x=5, y=366)
+newAuthor = Entry(root, width=20, bg="light yellow")
+newAuthor.place(x=140, y=366)
+
+typeText = Label(root, text="Type:")
+typeText.place(x=5, y=391)
+newType = Entry(root, width=7, bg="light yellow")
+newType.place(x=42, y=391)
+
+ISBNText = Label(root, text="ISBN (for books only):")
+ISBNText.place(x=5, y=416)
+newISBN = Entry(root, width=13, bg="light yellow")
+newISBN.place(x=127, y=416)
+
+# Delete item button
+deleteButton = Button(root, text="Delete item at position:", command=delete_entry)
+deleteButton.place(x=5, y=473)
+deletePosition = Entry(root, width=3, bg="light yellow")
+deletePosition.place(x=140, y=476)
+
+# Search button
+searchButton = Button(root, text="Search", command=search)
+searchButton.place(x=5, y=525)
+searchType = ttk.Combobox(state="readonly", values=["Name", "Author/creator", "Type", "ISBN"])
+searchType.place(x=55, y=527)
+searchText = Entry(root, width=45, bg="light yellow")
+searchText.place(x=5, y=560)
+
+# Nothing here
+btnNothing = Button(root, text="?", command=secret_command, cursor="plus")
+btnNothing.place(x=1520, y=770)
+
+help_button = Button(root, text="❓", command=show_help, cursor="question_arrow")
+help_button.place(x=1020, y=570)
+
+root.mainloop()
