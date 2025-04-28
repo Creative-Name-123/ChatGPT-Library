@@ -47,7 +47,7 @@ def display_books():
 
     # Insert new rows
     for idx, (title, author, book_type, isbn) in enumerate(read_library_data(), start=1):
-        tree.insert("", "end", values=(idx-1, title, author, book_type, isbn))
+        tree.insert("", "end", values=(title, author, book_type, isbn))
 
 
 def print_stuff():
@@ -89,147 +89,91 @@ def print_stuff():
     return "nothing"
 
 
-def edit_book():
-    try:
-        num = int(bookNumberInputArea.get())
-    except ValueError:
-        messagebox.showerror("Error", "Entry number must be an integer")
-    else:
-        global books
-        global book_list
-        books = open("books.txt", "r").read()
-        book_list = books.split("\n")
-        lines = open("books.txt", "r").readlines()
-        if len(bookNumberInputArea.get()) > 0 and len(bookTitleInputArea.get()) > 0:
-            try:
-                int(bookNumberInputArea.get())
-            except():
-                print("no")
-            else:
-                if 0 <= int(bookNumberInputArea.get()) <= len(lines):
-                    if bookTitleInputArea.get() in book_list:  # If inputted value is a duplicate
-                        messagebox.showerror("Error", "Duplicate book name")
-                    else:
-                        lines[int(bookNumberInputArea.get())] = bookTitleInputArea.get() + "\n"
-        with open("books.txt", "w+") as file:
-            for line in lines:
-                file.write(line)
-            file.close()
-        return "nothing"
-
-
-def edit_author():
-    try:
-        num = int(bookNumberAuthorInputArea.get())
-    except ValueError:
-        messagebox.showerror("Error", "Entry number must be an integer")
-    else:
-        global authors
-        global author_list
-        authors = open("authors.txt", "r").read()
-        author_list = authors.split("\n")
-        lines = open("authors.txt", "r").readlines()
-        if len(bookNumberAuthorInputArea.get()) > 0 and len(bookAuthorInputArea.get()) > 0:
-            if 0 <= int(bookNumberAuthorInputArea.get()) <= len(lines):
-                lines[int(bookNumberAuthorInputArea.get())] = bookAuthorInputArea.get() + "\n"
-            else:
-                messagebox.showerror("Error", "Invalid entry number")
-        else:
-            messagebox.showerror("Error", "One or more fields are empty")
-        with open("authors.txt", "w+") as file:
-            for line in lines:
-                file.write(line)
-            file.close()
-        return "nothing"
-
-
-def edit_type():
-    try:
-        num = int(bookNumberTypeInputArea.get())
-    except ValueError:
-        messagebox.showerror("Error", "Entry number must be an integer")
-    else:
-        with open("types.txt", "r") as file:
-            lines = file.readlines()
-            file.close()
-        if len(bookNumberTypeInputArea.get()) > 0 and len(bookTypeInputArea.get()) > 0:
-            if 0 <= int(bookNumberTypeInputArea.get()) <= len(lines):
-                lines[int(bookNumberTypeInputArea.get())] = bookTypeInputArea.get() + "\n"
-            else:
-                messagebox.showerror("Error", "Invalid entry number")
-        else:
-            messagebox.showerror("Error", "One or more fields are empty")
-        with open("types.txt", "w+") as file:
-            for line in lines:
-                file.write(line)
-            file.close()
-        return "nothing"
-
-
-def edit_isbn():
-    try:
-        num = int(bookNumberISBNInputArea.get())
-    except ValueError:
-        messagebox.showerror("Error", "Entry number must be an integer")
-    else:
-        global ISBNs
-        global ISBN_list
-        ISBNs = open("ISBNs.txt", "r").read()
-        ISBN_list = ISBNs.split("\n")
-        lines = open("ISBNs.txt", "r").readlines()
-        if len(bookNumberISBNInputArea.get()) > 0:
-            try:
-                int(bookNumberISBNInputArea.get())
-            except():
-                messagebox.showerror("Error", "ISBN number must be an integer")
-            else:
-                if int(bookNumberISBNInputArea.get()) <= len(lines):
-                    # ISBN-13 checker
-                    if int(bookISBNInputArea.get()[0]) == 9 and int(bookISBNInputArea.get()[1]) == 7 and (int(bookISBNInputArea.get()[2]) == 8 or int(bookISBNInputArea.get()[2]) == 9) and (int(bookISBNInputArea.get()[0]) + int(bookISBNInputArea.get()[1])*3 + int(bookISBNInputArea.get()[2]) + int(bookISBNInputArea.get()[3])*3 + int(bookISBNInputArea.get()[4]) + int(bookISBNInputArea.get()[5])*3 + int(bookISBNInputArea.get()[6]) + int(bookISBNInputArea.get()[7])*3 + int(bookISBNInputArea.get()[8]) + int(bookISBNInputArea.get()[9])*3 + int(bookISBNInputArea.get()[10]) + int(bookISBNInputArea.get()[11])*3 + int(bookISBNInputArea.get()[12])) % 10 == 0 and len(bookISBNInputArea.get()) == 13:
-                        if bookISBNInputArea.get() in ISBN_list:  # If inputted value is a duplicate
-                            messagebox.showerror("Error", "Duplicate ISBN number")
-                        else:
-                            lines[int(bookNumberISBNInputArea.get())] = bookISBNInputArea.get() + "\n"
-                    else:
-                        messagebox.showerror("Error", "Invalid ISBN number")
-        with open("ISBNs.txt", "w+") as file:
-            for line in lines:
-                file.write(line)
-            file.close()
-        return "nothing"
-
-
 def save_new_entry():
-    with open("books.txt", "a+") as books_file:
-        with open("authors.txt", "a+") as authors_file:
-            with open("types.txt", "a+") as types_file:
-                with open("ISBNs.txt", "a+") as ISBNs_file:
-                    if len(newTitle.get()) > 0 and len(newAuthor.get()) > 0 and len(newType.get()) > 0:
-                        if newTitle.get() in books_file.read():
-                            messagebox.showerror("Error", "Duplicate book name")
-                        elif newType.get() == "Book":
-                            if len(newISBN.get()) == 13:
-                                if int(newISBN.get()[0]) == 9 and int(newISBN.get()[1]) == 7 and (int(newISBN.get()[2]) == 8 or int(newISBN.get()[2]) == 9) and (int(newISBN.get()[0]) + int(newISBN.get()[1])*3 + int(newISBN.get()[2]) + int(newISBN.get()[3])*3 + int(newISBN.get()[4]) + int(newISBN.get()[5])*3 + int(newISBN.get()[6]) + int(newISBN.get()[7])*3 + int(newISBN.get()[8]) + int(newISBN.get()[9])*3 + int(newISBN.get()[10]) + int(newISBN.get()[11])*3 + int(newISBN.get()[12])) % 10 == 0:
-                                    if newISBN.get() in ISBNs_file.read():
-                                        messagebox.showerror("Error", "Duplicate ISBN number")
-                                    else:
-                                        books_file.write("\n" + newTitle.get())
-                                        authors_file.write("\n" + newAuthor.get())
-                                        types_file.write("\n" + newType.get())
-                                        ISBNs_file.write("\n" + newISBN.get())
-                                else:
-                                    messagebox.showerror("Error", "Invalid ISBN code")
-                            else:
-                                messagebox.showerror("Error", "Invalid ISBN code")
-                        else:
-                            books_file.write("\n" + newTitle.get())
-                            authors_file.write("\n" + newAuthor.get())
-                            types_file.write("\n" + newType.get())
-                            ISBNs_file.write("\n")
-                    books_file.close()
-                    authors_file.close()
-                    types_file.close()
-                    ISBNs_file.close()
+    # Create a new window
+    new_window = tkinter.Toplevel()
+    new_window.title("Add New Book Entry")
+    new_window.geometry("400x300")
+
+    # Labels and Entries
+    tkinter.Label(new_window, text="Title:").pack()
+    title_entry = tkinter.Entry(new_window)
+    title_entry.pack()
+
+    tkinter.Label(new_window, text="Author:").pack()
+    author_entry = tkinter.Entry(new_window)
+    author_entry.pack()
+
+    # Dropdown for Type
+    tkinter.Label(new_window, text="Type:").pack()
+    media_types = ["Book", "Magazine", "Newspaper", "Movie", "Audiobook", "eBook"]
+    type_var = tkinter.StringVar(new_window)
+    type_var.set(media_types[0])  # Default value
+    type_menu = ttk.Combobox(new_window, textvariable=type_var, values=media_types, state="readonly")
+    type_menu.current(0)
+    type_menu.pack()
+
+    tkinter.Label(new_window, text="ISBN (only for Books):").pack()
+    isbn_entry = tkinter.Entry(new_window)
+    isbn_entry.pack()
+
+    # Save button
+    def save_entry():
+        new_title = title_entry.get().strip()
+        new_author = author_entry.get().strip()
+        new_type = type_var.get().strip()
+        new_isbn = isbn_entry.get().strip()
+
+        if not new_title or not new_author or not new_type:
+            messagebox.showerror("Error", "All fields except ISBN must be filled")
+            return
+
+        with open("books.txt", "r") as books_file, open("ISBNs.txt", "r") as ISBNs_file:
+            books_text = books_file.read()
+            ISBNs_text = ISBNs_file.read()
+
+        if new_title in books_text:
+            messagebox.showerror("Error", "Duplicate book title")
+            return
+
+        if new_type == "Book":
+            if len(new_isbn) != 13:
+                messagebox.showerror("Error", "ISBN must be 13 digits")
+                return
+            try:
+                digits = [int(d) for d in new_isbn]
+            except ValueError:
+                messagebox.showerror("Error", "ISBN must contain only numbers")
+                return
+
+            if not (digits[0] == 9 and digits[1] == 7 and (digits[2] == 8 or digits[2] == 9)):
+                messagebox.showerror("Error", "Invalid ISBN prefix (must start with 978 or 979)")
+                return
+
+            if (sum(digits[i] if i % 2 == 0 else digits[i] * 3 for i in range(13))) % 10 != 0:
+                messagebox.showerror("Error", "Invalid ISBN checksum")
+                return
+
+            if new_isbn in ISBNs_text:
+                messagebox.showerror("Error", "Duplicate ISBN number")
+                return
+
+        # Save to files
+        with open("books.txt", "a") as books_file, open("authors.txt", "a") as authors_file, open("types.txt",
+                                                                                                  "a") as types_file, open(
+                "ISBNs.txt", "a") as ISBNs_file:
+            books_file.write("\n" + new_title)
+            authors_file.write("\n" + new_author)
+            types_file.write("\n" + new_type)
+            if new_type == "Book":
+                ISBNs_file.write("\n" + new_isbn)
+            else:
+                ISBNs_file.write("\n")
+
+        messagebox.showinfo("Success", "Entry added successfully!")
+        new_window.destroy()  # Close the entry window after saving
+
+    tkinter.Button(new_window, text="Save Entry", command=save_entry).pack(pady=10)
 
 
 def delete_entry():
@@ -342,7 +286,6 @@ def search():
 
         if match:
             tree.insert('', 'end', values=(
-                i,
                 book_list[i],
                 author_list[i],
                 type_list[i],
@@ -355,9 +298,9 @@ def show_help():
         "📚 How to Use the Library Database:\n\n"
         "➡️ See All Entries:\n"
         "- Click 'See All Entries (old format)' or 'Update Entries' to view the current list of stored books.\n\n"
-        "✏️ Edit Book Info:\n"
-        "- Use the appropriate input boxes to change the title, author, type, or ISBN.\n"
-        "- Enter the entry number in the first box and the new value in the second.\n\n"
+        "✏️ Edit Selected Entry Info:\n"
+        "- Select a book from the chart to edit, and then press 'Edit Selected Entry'.\n"
+        "- Edit the fields you would like to change and then press 'Save Changes'.\n\n"
         "➕ Add a New Entry:\n"
         "- Fill out the title, author, type, and ISBN fields.\n"
         "- Click 'Save new entry' to add it.\n\n"
@@ -375,6 +318,120 @@ def on_resize(a):
     width = root.winfo_width()
     height = root.winfo_height()
     btnDisplay.place(x=width - 350, y=height // 2 - 145)
+    btnEdit.place(x=width - 355, y=height // 2 + 120)
+
+
+def edit_selected_entry():
+    selected = tree.selection()
+    if not selected:
+        messagebox.showerror("Error", "No entry selected")
+        return
+
+    item = tree.item(selected)
+    item_values = item['values']
+
+    edit_window = Toplevel(root)
+    edit_window.title("Edit Entry")
+    edit_window.geometry("400x300")
+
+    Label(edit_window, text="Title:").pack()
+    title_entry = Entry(edit_window)
+    title_entry.pack()
+    title_entry.insert(0, item_values[1])
+
+    Label(edit_window, text="Author:").pack()
+    author_entry = Entry(edit_window)
+    author_entry.pack()
+    author_entry.insert(0, item_values[2])
+
+    Label(edit_window, text="Type (Book/Movie):").pack()
+    type_entry = Entry(edit_window)
+    type_entry.pack()
+    type_entry.insert(0, item_values[3])
+
+    Label(edit_window, text="ISBN (blank for movies):").pack()
+    isbn_entry = Entry(edit_window)
+    isbn_entry.pack()
+    isbn_entry.insert(0, item_values[4])
+
+    def save_changes():
+        idx = item_values[0]
+
+        # Read current data
+        with open("books.txt", "r") as f:
+            book_lines = f.readlines()
+        with open("authors.txt", "r") as f:
+            author_lines = f.readlines()
+        with open("types.txt", "r") as f:
+            type_lines = f.readlines()
+        with open("ISBNs.txt", "r") as f:
+            isbn_lines = f.readlines()
+
+        new_title = title_entry.get().strip()
+        new_author = author_entry.get().strip()
+        new_type = type_entry.get().strip()
+        new_isbn = isbn_entry.get().strip()
+
+        # Open full file texts for duplication checks
+        with open("books.txt", "r") as books_file, open("ISBNs.txt", "r") as ISBNs_file:
+            books_text = books_file.read()
+            ISBNs_text = ISBNs_file.read()
+
+        # --- VALIDATION ---
+        if not new_title or not new_author or not new_type:
+            messagebox.showerror("Error", "All fields except ISBN must be filled")
+            return
+
+        if new_title != book_lines[int(idx)].strip() and new_title in books_text:
+            messagebox.showerror("Error", "Duplicate book title")
+            return
+
+        if new_type == "Book":
+            if len(new_isbn) != 13:
+                messagebox.showerror("Error", "ISBN must be 13 digits")
+                return
+            try:
+                digits = [int(d) for d in new_isbn]
+            except ValueError:
+                messagebox.showerror("Error", "ISBN must contain only numbers")
+                return
+
+            if not (digits[0] == 9 and digits[1] == 7 and (digits[2] == 8 or digits[2] == 9)):
+                messagebox.showerror("Error", "Invalid ISBN prefix (must start with 978 or 979)")
+                return
+
+            if (sum(digits[i] if i % 2 == 0 else digits[i] * 3 for i in range(13))) % 10 != 0:
+                messagebox.showerror("Error", "Invalid ISBN checksum")
+                return
+
+            if new_isbn != isbn_lines[int(idx)].strip() and new_isbn in ISBNs_text:
+                messagebox.showerror("Error", "Duplicate ISBN number")
+                return
+
+        # --- END VALIDATION ---
+
+        # Update specific lines
+        book_lines[int(idx)] = new_title + "\n"
+        author_lines[int(idx)] = new_author + "\n"
+        type_lines[int(idx)] = new_type + "\n"
+        isbn_lines[int(idx)] = new_isbn + "\n"
+
+        # Write back to files
+        with open("books.txt", "w") as f:
+            f.writelines(book_lines)
+        with open("authors.txt", "w") as f:
+            f.writelines(author_lines)
+        with open("types.txt", "w") as f:
+            f.writelines(type_lines)
+        with open("ISBNs.txt", "w") as f:
+            f.writelines(isbn_lines)
+
+        # Update Treeview immediately
+        tree.item(selected, values=(idx, new_title, new_author, new_type, new_isbn))
+        edit_window.destroy()
+        messagebox.showinfo("Success", "Entry updated successfully!")
+
+    Button(edit_window, text="Save Changes", command=save_changes).pack(pady=10)
 
 
 # Creating a tkinter window
@@ -397,10 +454,9 @@ tree.pack(fill=BOTH, expand=False)
 table_scroll.config(command=tree.yview)
 
 # Define table columns
-tree['columns'] = ("ID", "Title", "Author", "Type", "ISBN")
+tree['columns'] = ("Title", "Author", "Type", "ISBN")
 
 tree.column("#0", width=0, stretch=NO)
-tree.column("ID", anchor=CENTER, width=40, stretch=NO)
 tree.column("Title", anchor=W, width=200, stretch=NO)
 tree.column("Author", anchor=W, width=100, stretch=NO)
 tree.column("Type", anchor=CENTER, width=80, stretch=NO)
@@ -408,7 +464,6 @@ tree.column("ISBN", anchor=W, width=130, stretch=NO)
 
 # Define headings
 tree.heading("#0", text="", anchor=W)
-tree.heading("ID", text="ID", anchor=CENTER)
 tree.heading("Title", text="Title", anchor=W)
 tree.heading("Author", text="Author", anchor=W)
 tree.heading("Type", text="Type", anchor=CENTER)
@@ -424,46 +479,6 @@ display_books()
 # Creating the See Books button
 btnSeeBooks = Button(root, text="See all entries (old format)", command=print_stuff, cursor="hand2")
 btnSeeBooks.place(x=5, y=5)
-
-# Creating the edit a book button
-btnEditABook = Button(root, text="Save title edits (box 1 is the entry number; box 2 is the new title)", command=edit_book, cursor="hand2")
-btnEditABook.place(x=5, y=35)
-
-# Creating input areas for editing books
-bookNumberInputArea = Entry(root, width=3, bg="light yellow")
-bookNumberInputArea.place(x=5, y=68)
-bookTitleInputArea = Entry(root, width=45, bg="light yellow")
-bookTitleInputArea.place(x=40, y=68)
-
-# Creating the edit authors button
-btnEditAnAuthor = Button(root, text="Save author edits (box 1 is the entry number; box 2 is the new author name)", command=edit_author, cursor="hand2")
-btnEditAnAuthor.place(x=5, y=95)
-
-# Creating input areas for editing authors
-bookNumberAuthorInputArea = Entry(root, width=3, bg="light yellow")
-bookNumberAuthorInputArea.place(x=5, y=128)
-bookAuthorInputArea = Entry(root, width=20, bg="light yellow")
-bookAuthorInputArea.place(x=40, y=128)
-
-# Creating the edit type button
-btnEditAType = Button(root, text="Save type edits (box 1 is the entry number; box 2 is the new type)", command=edit_type, cursor="hand2")
-btnEditAType.place(x=5, y=155)
-
-# Creating input areas for editing types
-bookNumberTypeInputArea = Entry(root, width=3, bg="light yellow")
-bookNumberTypeInputArea.place(x=5, y=188)
-bookTypeInputArea = Entry(root, width=7, bg="light yellow")
-bookTypeInputArea.place(x=40, y=188)
-
-# Creating the edit ISBN button
-btnEditAnISBN = Button(root, text="Save ISBN edits (box 1 is the entry number; box 2 is the new ISBN)", command=edit_isbn, cursor="hand2")
-btnEditAnISBN.place(x=5, y=215)
-
-# Creating input areas for editing ISBNs
-bookNumberISBNInputArea = Entry(root, width=3, bg="light yellow")
-bookNumberISBNInputArea.place(x=5, y=248)
-bookISBNInputArea = Entry(root, width=13, bg="light yellow")
-bookISBNInputArea.place(x=40, y=248)
 
 # Creating the save new entry button
 btnSaveNewEntry = Button(root, text="Save new entry", command=save_new_entry, cursor="hand2")
@@ -506,6 +521,9 @@ searchText.place(x=5, y=560)
 
 help_button = Button(root, text="❓", command=show_help, cursor="question_arrow")
 help_button.place(x=160, y=5)
+
+btnEdit = Button(root, text="Edit Selected Entry", command=edit_selected_entry, cursor="hand2")
+btnEdit.place(x=5, y=35)
 
 root.bind("<Configure>", on_resize)
 
