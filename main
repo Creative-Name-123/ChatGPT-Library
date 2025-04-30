@@ -3,6 +3,7 @@ from tkinter import *
 from tkinter import scrolledtext, messagebox
 from tkinter import ttk
 variable = 0
+organize = "x"  # Can be b, a, t, i, or x
 
 # Opening the list of books
 books = open("books.txt", "r+").read()
@@ -21,19 +22,41 @@ ISBNs = open("ISBNs.txt", "r+").read()
 ISBN_list = ISBNs.split("\n")
 
 
-def read_library_data():
+def read_library_data(organize):
     try:
-        with open("books.txt", "r", encoding="utf-8") as f1, open("authors.txt", "r", encoding="utf-8") as f2, open(
-                  "types.txt", "r", encoding="utf-8") as f3, open("ISBNs.txt", "r", encoding="utf-8") as f4:
+        with open("books.txt", "r", encoding="utf-8") as f1, \
+                open("authors.txt", "r", encoding="utf-8") as f2, \
+                open("types.txt", "r", encoding="utf-8") as f3, \
+                open("ISBNs.txt", "r", encoding="utf-8") as f4:
 
             read_titles = [line.strip() for line in f1.readlines()]
             read_authors = [line.strip() for line in f2.readlines()]
             read_types = [line.strip() for line in f3.readlines()]
             read_isbns = [line.strip() for line in f4.readlines()]
 
-            # Ensure all lists are of equal length
-            min_length = min(len(read_titles), len(read_authors), len(read_types))
-            return list(zip(read_titles[:min_length], read_authors[:min_length], read_types[:min_length], read_isbns[:min_length]))
+            # Pad each list with empty strings if needed
+            max_length = max(len(read_titles), len(read_authors), len(read_types), len(read_isbns))
+            read_titles += [""] * (max_length - len(read_titles))
+            read_authors += [""] * (max_length - len(read_authors))
+            read_types += [""] * (max_length - len(read_types))
+            read_isbns += [""] * (max_length - len(read_isbns))
+
+            # Determine the sorting order based on the 'organize' variable
+            if organize == "b":
+                # Sort by title
+                return sorted(zip(read_titles, read_authors, read_types, read_isbns))
+            elif organize == "i":
+                # Sort by ISBN
+                return sorted(zip(read_titles, read_authors, read_types, read_isbns), key=lambda x: x[3])
+            elif organize == "a":
+                # Sort by author
+                return sorted(zip(read_titles, read_authors, read_types, read_isbns), key=lambda x: x[1])
+            elif organize == "t":
+                # Sort by type
+                return sorted(zip(read_titles, read_authors, read_types, read_isbns), key=lambda x: x[2])
+            else:
+                # Default order: no sorting
+                return list(zip(read_titles, read_authors, read_types, read_isbns))
 
     except FileNotFoundError as e:
         print(f"Error: {e}")
@@ -46,7 +69,8 @@ def display_books():
         tree.delete(row)
 
     # Insert new rows
-    for idx, (title, author, book_type, isbn) in enumerate(read_library_data(), start=1):
+    data = read_library_data(organize)
+    for idx, (title, author, book_type, isbn) in enumerate(data, start=1):
         tree.insert("", "end", values=(title, author, book_type, isbn))
 
 
@@ -159,8 +183,7 @@ def save_new_entry():
                 return
 
         # Save to files
-        with open("books.txt", "a") as books_file, open("authors.txt", "a") as authors_file, open("types.txt",
-                                                                                                  "a") as types_file, open(
+        with open("books.txt", "a") as books_file, open("authors.txt", "a") as authors_file, open("types.txt", "a") as types_file, open(
                 "ISBNs.txt", "a") as ISBNs_file:
             books_file.write("\n" + new_title)
             authors_file.write("\n" + new_author)
@@ -172,7 +195,7 @@ def save_new_entry():
 
         messagebox.showinfo("Success", "Entry added successfully!")
         new_window.destroy()  # Close the entry window after saving
-
+    display_books()
     tkinter.Button(new_window, text="Save Entry", command=save_entry).pack(pady=10)
 
 
@@ -244,6 +267,7 @@ def delete_entry():
                         authors_file_w.close()
                         types_file_w.close()
                         ISBNs_file_w.close()
+    display_books()
     return "nothing"
 
 
@@ -302,8 +326,8 @@ def show_help():
         "- Select a book from the chart to edit, and then press 'Edit Selected Entry'.\n"
         "- Edit the fields you would like to change and then press 'Save Changes'.\n\n"
         "➕ Add a New Entry:\n"
-        "- Fill out the title, author, type, and ISBN fields.\n"
-        "- Click 'Save new entry' to add it.\n\n"
+        "- Click 'Add a New Entry'.\n"
+        "- Fill out the required fields and then click 'Save Entry'.\n\n"
         "🗑 Delete an Entry:\n"
         "- Type the entry number into the delete box and click 'Delete item at position:'.\n\n"
         "🔍 Search:\n"
@@ -317,7 +341,6 @@ def show_help():
 def on_resize(a):
     width = root.winfo_width()
     height = root.winfo_height()
-    btnDisplay.place(x=width - 350, y=height // 2 - 145)
     btnEdit.place(x=width - 355, y=height // 2 + 120)
 
 
@@ -434,10 +457,28 @@ def edit_selected_entry():
     Button(edit_window, text="Save Changes", command=save_changes).pack(pady=10)
 
 
+def update_organize(value):
+    global organize
+    organize = value.get()
+    tree.delete(*tree.get_children())  # Delete all entries in the tree
+    data = read_library_data(organize)  # Create new data based on the new organization value
+    for idx, (title, author, book_type, isbn) in enumerate(data, start=1):
+        tree.insert("", "end", values=(title, author, book_type, isbn))
+
+
 # Creating a tkinter window
 root = Tk()
-root.geometry('1000x600')
+root.geometry('750x300')
 root.title("Library Database")
+
+# Create the dropdown menu function
+organize_options = ["Default Order", "Alphabetical by Title", "Alphabetical by ISBN", "Alphabetical by Author", "Categorized by Type"]  # List of organization options
+organize_var = tkinter.StringVar()  # Variable for the current selection
+organize_var.set("Default Order")  # Set the current selection to the default value
+
+# Create the dropdown menu
+organize_menu = ttk.OptionMenu(root, organize_var, *organize_options, command=update_organize)
+organize_menu.pack(padx=10, pady=10)
 
 # Frame for the table
 table_frame = Frame(root)
@@ -469,11 +510,6 @@ tree.heading("Author", text="Author", anchor=W)
 tree.heading("Type", text="Type", anchor=CENTER)
 tree.heading("ISBN", text="ISBN", anchor=W)
 
-# Button to load/display the data
-btnDisplay = Button(root, text="Update Entries", command=display_books, cursor="hand2")
-btnDisplay.place(x=len("The x originally will not matter because it will change when the window size changes (including"
-                       " when the screen loads)."), y=len("The y doesn't matter either."))
-
 display_books()
 
 # Creating the See Books button
@@ -481,43 +517,22 @@ btnSeeBooks = Button(root, text="See all entries (old format)", command=print_st
 btnSeeBooks.place(x=5, y=5)
 
 # Creating the save new entry button
-btnSaveNewEntry = Button(root, text="Save new entry", command=save_new_entry, cursor="hand2")
-btnSaveNewEntry.place(x=5, y=308)
-
-# Creating the input areas for the new entry button
-bookText = Label(root, text="Name:")
-bookText.place(x=5, y=341)
-newTitle = Entry(root, width=45, bg="light yellow")
-newTitle.place(x=48, y=341)
-
-authorText = Label(root, text="Author/director/creator:")
-authorText.place(x=5, y=366)
-newAuthor = Entry(root, width=20, bg="light yellow")
-newAuthor.place(x=140, y=366)
-
-typeText = Label(root, text="Type:")
-typeText.place(x=5, y=391)
-newType = Entry(root, width=7, bg="light yellow")
-newType.place(x=42, y=391)
-
-ISBNText = Label(root, text="ISBN (for books only):")
-ISBNText.place(x=5, y=416)
-newISBN = Entry(root, width=13, bg="light yellow")
-newISBN.place(x=127, y=416)
+btnSaveNewEntry = Button(root, text="Add a New Entry", command=save_new_entry, cursor="hand2")
+btnSaveNewEntry.place(x=5, y=40)
 
 # Delete item button
 deleteButton = Button(root, text="Delete item at position:", command=delete_entry)
-deleteButton.place(x=5, y=473)
+deleteButton.place(x=5, y=75)
 deletePosition = Entry(root, width=3, bg="light yellow")
-deletePosition.place(x=140, y=476)
+deletePosition.place(x=140, y=75)
 
 # Search button
 searchButton = Button(root, text="Search", command=search)
-searchButton.place(x=5, y=525)
+searchButton.place(x=5, y=110)
 searchType = ttk.Combobox(state="readonly", values=["Name", "Author/creator", "Type", "ISBN"])
-searchType.place(x=55, y=527)
-searchText = Entry(root, width=45, bg="light yellow")
-searchText.place(x=5, y=560)
+searchType.place(x=55, y=110)
+searchText = Entry(root, width=30, bg="light yellow")
+searchText.place(x=5, y=143)
 
 help_button = Button(root, text="❓", command=show_help, cursor="question_arrow")
 help_button.place(x=160, y=5)
