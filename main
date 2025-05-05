@@ -3,7 +3,7 @@ from tkinter import *
 from tkinter import scrolledtext, messagebox
 from tkinter import ttk
 variable = 0
-organize = "x"  # Can be b, a, t, i, or x
+organize = "Default Order"  # Can be b, a, t, i, or x
 
 # Opening the list of books
 books = open("books.txt", "r+").read()
@@ -42,16 +42,16 @@ def read_library_data(organize):
             read_isbns += [""] * (max_length - len(read_isbns))
 
             # Determine the sorting order based on the 'organize' variable
-            if organize == "b":
+            if organize == "Alphabetical by Title":
                 # Sort by title
                 return sorted(zip(read_titles, read_authors, read_types, read_isbns))
-            elif organize == "i":
+            elif organize == "Alphabetical by ISBN":
                 # Sort by ISBN
                 return sorted(zip(read_titles, read_authors, read_types, read_isbns), key=lambda x: x[3])
-            elif organize == "a":
+            elif organize == "Alphabetical by Author":
                 # Sort by author
                 return sorted(zip(read_titles, read_authors, read_types, read_isbns), key=lambda x: x[1])
-            elif organize == "t":
+            elif organize == "Categorized by Type":
                 # Sort by type
                 return sorted(zip(read_titles, read_authors, read_types, read_isbns), key=lambda x: x[2])
             else:
@@ -341,7 +341,8 @@ def show_help():
 def on_resize(a):
     width = root.winfo_width()
     height = root.winfo_height()
-    btnEdit.place(x=width - 355, y=height // 2 + 120)
+    btnEdit.place(x=width - 355, y=height // 2 + 125)
+    organize_menu.place(x=width-370, y=height // 2 - 140)
 
 
 def edit_selected_entry():
@@ -459,7 +460,7 @@ def edit_selected_entry():
 
 def update_organize(value):
     global organize
-    organize = value.get()
+    organize = value
     tree.delete(*tree.get_children())  # Delete all entries in the tree
     data = read_library_data(organize)  # Create new data based on the new organization value
     for idx, (title, author, book_type, isbn) in enumerate(data, start=1):
@@ -468,11 +469,11 @@ def update_organize(value):
 
 # Creating a tkinter window
 root = Tk()
-root.geometry('750x300')
+root.geometry('750x330')
 root.title("Library Database")
 
 # Create the dropdown menu function
-organize_options = ["Default Order", "Alphabetical by Title", "Alphabetical by ISBN", "Alphabetical by Author", "Categorized by Type"]  # List of organization options
+organize_options = ["", "Default Order", "Alphabetical by Title", "Alphabetical by ISBN", "Alphabetical by Author", "Categorized by Type"]  # List of organization options
 organize_var = tkinter.StringVar()  # Variable for the current selection
 organize_var.set("Default Order")  # Set the current selection to the default value
 
